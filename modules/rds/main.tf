@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
@@ -31,7 +35,7 @@ resource "aws_security_group" "rds_sg" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Ajustar conforme necessário para segurança
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -42,7 +46,6 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
-# Criar Instância RDS MySQL
 resource "aws_db_instance" "tech_challenge_db" {
   identifier              = "tech-challenge-db"
   engine                  = "mysql"
@@ -55,5 +58,5 @@ resource "aws_db_instance" "tech_challenge_db" {
   db_subnet_group_name    = aws_db_subnet_group.tech_challenge_subnet_group.name
   skip_final_snapshot     = true
 
-  vpc_security_group_ids   = [aws_security_group.rds_sg.id] # Grupo de segurança associado
+  vpc_security_group_ids   = [aws_security_group.rds_sg.id]
 }
