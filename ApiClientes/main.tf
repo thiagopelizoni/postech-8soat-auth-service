@@ -9,7 +9,7 @@ resource "aws_api_gateway_rest_api" "sandbox_api" {
 resource "aws_api_gateway_resource" "custom_path" {
   rest_api_id = aws_api_gateway_rest_api.sandbox_api.id
   parent_id   = aws_api_gateway_rest_api.sandbox_api.root_resource_id
-  path_part   = "custom-path"
+  path_part   = "login"
 }
 
 resource "aws_api_gateway_method" "custom_method" {
