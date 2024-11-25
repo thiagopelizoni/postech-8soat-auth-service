@@ -130,7 +130,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 resource "aws_lambda_function" "sandbox_lambda" {
   function_name    = "Sandbox"
   role             = aws_iam_role.lambda_exec_role.arn
-  handler          = "index.handler"
+  handler          = "lambda_function.handler"
   runtime          = "python3.11"
   filename         = "${path.module}/function.zip"
   source_code_hash = filebase64sha256("${path.module}/function.zip")
