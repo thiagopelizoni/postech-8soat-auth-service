@@ -41,6 +41,10 @@ resource "aws_api_gateway_deployment" "deployment" {
   triggers = {
     redeployment = sha1(jsonencode([aws_lambda_function.sandbox_lambda.source_code_hash]))
   }
+
+  depends_on = [
+    aws_api_gateway_integration.custom_integration
+  ]
 }
 
 resource "aws_api_gateway_stage" "prod" {
@@ -50,8 +54,8 @@ resource "aws_api_gateway_stage" "prod" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-  enable_dns_support = true
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
   enable_dns_hostnames = true
 }
 
@@ -61,7 +65,6 @@ resource "aws_internet_gateway" "main" {
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
-
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
@@ -93,7 +96,6 @@ resource "aws_subnet" "subnet_2" {
 resource "aws_db_subnet_group" "sandbox_subnet_group" {
   name       = "sandbox-subnet-group"
   subnet_ids = [aws_subnet.subnet_1.id, aws_subnet.subnet_2.id]
-
   tags = {
     Name = "Tech Challenge DB Subnet Group"
   }
@@ -102,14 +104,12 @@ resource "aws_db_subnet_group" "sandbox_subnet_group" {
 resource "aws_security_group" "rds_sg" {
   name   = "rds-security-group"
   vpc_id = aws_vpc.main.id
-
   ingress {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -135,7 +135,6 @@ resource "aws_db_instance" "sandbox_db" {
 
 resource "aws_iam_role" "lambda_exec_role" {
   name = "lambda_execution_role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -155,11 +154,10 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 resource "aws_lambda_function" "sandbox_lambda" {
   function_name    = "Sandbox"
   role             = aws_iam_role.lambda_exec_role.arn
-  handler          = "lambda_function.handler"
+  handler          = "lambda_function.lambda_handler"
   runtime          = "python3.11"
   filename         = "${path.module}/function.zip"
   source_code_hash = filebase64sha256("${path.module}/function.zip")
-
   environment {
     variables = {
       DB_PASSWORD = var.db_password
@@ -168,4 +166,12 @@ resource "aws_lambda_function" "sandbox_lambda" {
       DB_NAME     = var.db_name
     }
   }
+}
+
+output "api_gateway_endpoint" {
+  value = aws_api_gateway_stage.prod.invoke_url
+}
+
+output "rds_endpoint" {
+  value = aws_db_instance.sandbox_db.endpoint
 }
