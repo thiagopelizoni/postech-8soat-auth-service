@@ -51,6 +51,31 @@ resource "aws_api_gateway_stage" "prod" {
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_support = true
+  enable_dns_hostnames = true
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+}
+
+resource "aws_route_table_association" "subnet_1_association" {
+  subnet_id      = aws_subnet.subnet_1.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "subnet_2_association" {
+  subnet_id      = aws_subnet.subnet_2.id
+  route_table_id = aws_route_table.public.id
 }
 
 resource "aws_subnet" "subnet_1" {
@@ -104,8 +129,8 @@ resource "aws_db_instance" "sandbox_db" {
   password                = var.db_password
   db_subnet_group_name    = aws_db_subnet_group.sandbox_subnet_group.name
   skip_final_snapshot     = true
-
-  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  vpc_security_group_ids  = [aws_security_group.rds_sg.id]
+  publicly_accessible     = true
 }
 
 resource "aws_iam_role" "lambda_exec_role" {

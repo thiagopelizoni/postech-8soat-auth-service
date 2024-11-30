@@ -10,5 +10,5 @@ variable "db_password" {
 
 variable "db_name" {
     description = "Nome do banco de dados RDS"
-    default     = "TechChallenge"
+    default     = "sandbox"
 }
