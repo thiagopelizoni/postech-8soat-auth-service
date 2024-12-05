@@ -78,6 +78,11 @@ resource "aws_lambda_function" "sandbox_lambda" {
   runtime          = "python3.11"
   filename         = "${path.module}/function.zip"
   source_code_hash = filebase64sha256("${path.module}/function.zip")
+  environment {
+    variables = {
+      COGNITO_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.user_pool_client.id
+    }
+  }
 }
 
 resource "aws_cognito_user_pool" "user_pool" {
