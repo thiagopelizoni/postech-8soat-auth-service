@@ -1,9 +1,11 @@
 import csv
-import subprocess
+import boto3
 import os
 
 user_pool_id = os.getenv("AWS_COGNITO_POOL_ID")
 csv_file_path = "/home/tpelizoni/Storage/usuarios.csv"
+
+client = boto3.client('cognito-idp')
 
 with open(csv_file_path, mode="r") as csv_file:
     csv_reader = csv.DictReader(csv_file)
@@ -15,30 +17,38 @@ with open(csv_file_path, mode="r") as csv_file:
 
         username = email.split("@")[0]
 
-        create_user_command = [
-            "aws", "cognito-idp", "admin-create-user",
-            "--user-pool-id", user_pool_id,
-            "--username", username,
-            "--user-attributes",
-            f"Name=email,Value={email}",
-            f"Name=custom:cpf,Value={cpf}",
-            f"Name=custom:nome,Value={nome}",
-            f"Name=custom:data_nascimento,Value={row['data_nascimento']}",
-            "--temporary-password", password,
-            "--message-action", "SUPPRESS"
-        ]
-
         try:
-            result = subprocess.run(
-                create_user_command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=True,
-                timeout=30
+            try:
+                client.admin_delete_user(
+                    UserPoolId=user_pool_id,
+                    Username=username
+                )
+                print(f"Usuário {username} excluído com sucesso.")
+            except client.exceptions.UserNotFoundException:
+                print(f"Usuário {username} não encontrado. Criando um novo.")
+
+            client.admin_create_user(
+                UserPoolId=user_pool_id,
+                Username=username,
+                UserAttributes=[
+                    {"Name": "email", "Value": email},
+                    {"Name": "email_verified", "Value": "true"},
+                    {"Name": "custom:cpf", "Value": cpf},
+                    {"Name": "custom:nome", "Value": nome},
+                    {"Name": "custom:data_nascimento", "Value": row["data_nascimento"]},
+                ],
+                TemporaryPassword=password,
+                MessageAction="SUPPRESS"
             )
-            print(f"Usuário {username} criado com sucesso. Saída: {result.stdout}")
-        except subprocess.CalledProcessError as e:
-            print(f"Erro ao criar o usuário {nome}: {e.stderr}")
-        except subprocess.TimeoutExpired:
-            print(f"Tempo limite excedido ao criar o usuário {nome}.")
+            print(f"Usuário {username} criado com sucesso.")
+
+            client.admin_set_user_password(
+                UserPoolId=user_pool_id,
+                Username=username,
+                Password=password,
+                Permanent=True
+            )
+            print(f"Senha permanente definida para o usuário {username}.")
+
+        except Exception as e:
+            print(f"Erro ao processar o usuário {username}: {str(e)}")

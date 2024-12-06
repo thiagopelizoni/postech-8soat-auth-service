@@ -66,9 +66,28 @@ resource "aws_iam_role" "lambda_exec_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+resource "aws_iam_policy" "lambda_cognito_policy" {
+  name   = "LambdaCognitoPolicy"
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Effect: "Allow",
+        Action: [
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminSetUserPassword",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminDeleteUser"
+        ],
+        Resource: "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_cognito_policy_attachment" {
   role       = aws_iam_role.lambda_exec_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  policy_arn = aws_iam_policy.lambda_cognito_policy.arn
 }
 
 resource "aws_lambda_function" "sandbox_lambda" {
@@ -80,6 +99,7 @@ resource "aws_lambda_function" "sandbox_lambda" {
   source_code_hash = filebase64sha256("${path.module}/function.zip")
   environment {
     variables = {
+      COGNITO_USER_POOL_ID        = aws_cognito_user_pool.user_pool.id
       COGNITO_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.user_pool_client.id
     }
   }
@@ -89,30 +109,40 @@ resource "aws_cognito_user_pool" "user_pool" {
   name = "SandboxUserPool"
 
   schema {
-    name               = "cpf"
+    name                = "cpf"
     attribute_data_type = "String"
     required            = false
     mutable             = true
   }
 
   schema {
-    name               = "nome"
+    name                = "nome"
     attribute_data_type = "String"
     required            = false
     mutable             = true
   }
 
   schema {
-    name               = "data_nascimento"
+    name                = "data_nascimento"
     attribute_data_type = "String"
     required            = false
     mutable             = true
   }
+
+  alias_attributes = ["email"]
+
+  auto_verified_attributes = ["email"]
 }
 
 resource "aws_cognito_user_pool_client" "user_pool_client" {
   name         = "SandboxUserPoolClient"
   user_pool_id = aws_cognito_user_pool.user_pool.id
+
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH"
+  ]
 }
 
 output "api_gateway_endpoint" {
