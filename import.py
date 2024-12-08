@@ -2,8 +2,8 @@ import csv
 import boto3
 import os
 
-user_pool_id = os.getenv("AWS_COGNITO_POOL_ID")
-csv_file_path = "/home/tpelizoni/Storage/usuarios.csv"
+user_pool_id = os.getenv("COGNITO_USER_POOL_CLIENT_ID")
+csv_file_path = "usuarios.csv"
 
 client = boto3.client('cognito-idp')
 
