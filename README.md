@@ -6,4 +6,4 @@ Tech Challenge do curso de pós-graduação em [Software Arquitecture](https://p
 
 Arquivos de configuração do Terraform para a criação de um serviço de autenticação utilizando [API Gateway](https://aws.amazon.com/pt/api-gateway/), [Lambda](https://aws.amazon.com/pt/lambda/) e [Cognito](https://aws.amazon.com/pt/cognito).
 
-A [API Fast Food](https://github.com/thiagopelizoni/tech-challenge-api) efetua a autenticação de seus clientes por meio deste serviço.
+A [API Fast Food](https://github.com/thiagopelizoni/postech-8soat-api) efetua a autenticação de seus clientes por meio deste serviço.
